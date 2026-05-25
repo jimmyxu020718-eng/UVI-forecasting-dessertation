@@ -1,4 +1,4 @@
-### training method
+### trainer
 
 import numpy as np
 import torch
@@ -126,7 +126,7 @@ def train_model(model, train_loader, val_loader, epochs=50, device='cuda'):
     return model
 
 # ==============================================================================
-# 3. 本地调试伪代码 (如何调用上述流程)
+# 3. 本地调试伪代码
 # ==============================================================================
 if __name__ == "__main__":
     # 假设特征维度 D = 12 (温度, 风速, kt, 各种正余弦时间编码等)
