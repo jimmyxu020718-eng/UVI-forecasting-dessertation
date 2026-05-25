@@ -1,0 +1,10 @@
+# persistence model
+def model_persestence(x):
+    return x
+
+predictions = list()
+
+for x in test_X:
+    yhat = model_persistence(x)
+    predictions.append(yhat)
+test_score = mean_squared_error(test_y, predictions)
