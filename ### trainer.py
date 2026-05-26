@@ -37,7 +37,7 @@ class WeatherTimeSeriesDataset(Dataset):
         return seq_x, seq_y
 
 # ==============================================================================
-# 2. 高级训练流程控制 (包含 Huber Loss, Warmup, 早停)
+# 2. 训练流程控制 (包含 Huber Loss, Warmup, 早停)
 # ==============================================================================
 def train_model(model, train_loader, val_loader, epochs=50, device='cuda'):
     model = model.to(device)
