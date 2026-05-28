@@ -3,6 +3,7 @@ def model_persestence(x):
     return x
 
 predictions = list()
+persistence_series = extended_series.shift(24)
 
 for x in test_X:
     yhat = model_persistence(x)
