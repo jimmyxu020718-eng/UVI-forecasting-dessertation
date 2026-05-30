@@ -1,0 +1,71 @@
+import pandas as pd
+import numpy as np
+import torch
+from torch.utils.data import Dataset, DataLoader
+
+# ========================================================
+# 1. 滑动窗口数据集类
+# ========================================================
+class WeatherTimeSeriesDataset(Dataset):
+    def __init__(self, data_matrix, target_matrix, seq_len=96, pred_len=24):
+        """
+        data_matrix: (总小时数, 特征维度)
+        target_matrix: (总小时数, 1)  目标列（如UVI）
+        """
+        self.seq_len = seq_len
+        self.pred_len = pred_len
+        # 可构建的有效样本数
+        self.valid_length = len(data_matrix) - seq_len - pred_len + 1
+        assert self.valid_length > 0, "数据长度不足以构造一个 (seq+pred) 窗口"
+        self.x = torch.FloatTensor(data_matrix)
+        self.y = torch.FloatTensor(target_matrix)
+
+    def __len__(self):
+        return self.valid_length
+
+    def __getitem__(self, idx):
+        # 历史 96 小时所有特征
+        seq_x = self.x[idx : idx + self.seq_len, :]          # (96, F)
+        # 未来 24 小时目标值
+        seq_y = self.y[idx + self.seq_len : idx + self.seq_len + self.pred_len, 0]  # (24,)
+        return seq_x, seq_y
+
+# ========================================================
+# 2. 数据加载器创建函数（包含时间切分逻辑）
+# ========================================================
+def build_dataloaders(df, feature_cols, target_col='UVI',
+                      seq_len=96, pred_len=24, batch_size=32):
+    """
+    从带 DatetimeIndex 的 DataFrame 构建训练/验证/测试 DataLoader
+    df: 全量数据，索引必须为 datetime
+    feature_cols: 输入特征列名列表
+    target_col: 目标列名
+    """
+    # ---------- 按时段切分 ----------
+    train_df = df.loc['2020-01-01':'2021-12-31']
+    val_df   = df.loc['2022-01-01':'2022-04-30']
+    test_df  = df.loc['2022-05-01':'2022-08-31']
+
+    # 提取 numpy 数组
+    train_data = train_df[feature_cols].values
+    train_target = train_df[[target_col]].values
+    val_data   = val_df[feature_cols].values
+    val_target   = val_df[[target_col]].values
+    test_data  = test_df[feature_cols].values
+    test_target = test_df[[target_col]].values
+
+    # ---------- 构建 Dataset ----------
+    train_dataset = WeatherTimeSeriesDataset(train_data, train_target, seq_len, pred_len)
+    val_dataset   = WeatherTimeSeriesDataset(val_data, val_target, seq_len, pred_len)
+    test_dataset  = WeatherTimeSeriesDataset(test_data, test_target, seq_len, pred_len)
+
+    print(f"训练窗口数: {len(train_dataset)}")
+    print(f"验证窗口数: {len(val_dataset)}")
+    print(f"测试窗口数: {len(test_dataset)}")
+
+    # ---------- DataLoader (禁止 shuffle) ----------
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False)
+    val_loader   = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
+    test_loader  = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+
+    return train_loader, val_loader, test_loader
